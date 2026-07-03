@@ -97,9 +97,11 @@ export default function Privacy() {
           body: (
             <p>
               To turn a payment email into a structured commitment, the relevant email text is processed by a
-              large-language-model provider (Groq, running Meta&apos;s Llama models). This is used purely to extract fields
-              like merchant, amount and date. We do <span className={strong}>not</span> use your data to train any AI
-              model, and we do not send your data to consumer/free AI tiers.
+              large-language-model provider (Groq, running Meta&apos;s Llama models), with Google&apos;s Gemini as an
+              automatic fallback if the primary provider is unavailable. This is used purely to extract fields like
+              merchant, amount and date, and only the extracted fields are stored — the raw email text is not
+              retained. We do <span className={strong}>not</span> use your data to train any AI model, and we do not
+              send your data to consumer/free AI tiers.
             </p>
           ),
         },
@@ -113,6 +115,7 @@ export default function Privacy() {
                 <li><span className={strong}>Supabase</span> — encrypted database hosting.</li>
                 <li><span className={strong}>Vercel</span> — application hosting.</li>
                 <li><span className={strong}>Groq</span> — AI parsing of payment-email text (see above).</li>
+                <li><span className={strong}>Google (Gemini)</span> — fallback AI parsing if the primary provider is unavailable.</li>
                 <li><span className={strong}>Meta (WhatsApp)</span> — delivering your reminders.</li>
                 <li><span className={strong}>Resend</span> — email reminders when WhatsApp isn&apos;t connected.</li>
                 <li><span className={strong}>PostHog</span> — privacy-conscious product analytics to understand how features are used (no selling of data).</li>
