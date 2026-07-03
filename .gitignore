@@ -1,0 +1,32 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# env
+.env
+.env.local
+.env*.local
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+
+# vercel
+.vercel
+
+# skills: keep the ENTIRE internal memory/process/spec folder private — nothing here is published
+/skills/
+
+# local Claude Code config (not part of the app)
+/.claude/
+
+# typescript build artifacts (regenerated on build)
+*.tsbuildinfo
+next-env.d.ts

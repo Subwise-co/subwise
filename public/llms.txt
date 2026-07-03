@@ -1,0 +1,26 @@
+# Subwise
+
+> Subwise is India's financial-reminder layer, built on WhatsApp. Connect Gmail once and Subwise
+> organizes every recurring payment — subscriptions, free trials, rent, EMIs, insurance, SIPs,
+> utilities, credit cards — then reminds you on WhatsApp before money leaves your account. Free.
+
+## What Subwise does
+- Scans Gmail (read-only) to auto-detect subscriptions, free trials, and auto-pay (UPI AutoPay / e-NACH / card SI / bank e-mandate) mandates.
+- Lets you add any recurring commitment by hand (rent, EMI, insurance, SIP, custom) with a flexible schedule.
+- Sends reminders on WhatsApp 1, 3, or 7 days before a charge — the channel Indians actually check.
+- Shows a financial overview: monthly & yearly commitment, what's due this week, trials ending, spend by category.
+- Helps you cancel — including the India-specific UPI auto-pay mandate, which cancelling the app alone does not stop.
+
+## Who it's for
+Working professionals in India (22–35) who lose money to forgotten subscriptions and silent auto-debits.
+
+## Key facts
+- Free. Privacy-first: read-only Gmail, only payment-related emails, never attachments, never sold.
+- Or sign up with email/password and skip Gmail entirely (manual tracking).
+- WhatsApp reminders are official (Meta WhatsApp Business Platform). Reply STOP to opt out anytime (TRAI compliant).
+
+## Pages
+- Home: https://subwise.co.in/
+- Cancellation guides (incl. UPI mandate): https://subwise.co.in/guides
+- Privacy: https://subwise.co.in/privacy
+- Terms: https://subwise.co.in/terms
