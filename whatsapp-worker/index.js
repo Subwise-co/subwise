@@ -11,6 +11,8 @@
 // Auth: a single shared bearer secret (WHATSAPP_WORKER_SECRET) guards /enqueue and is used when
 // calling the Next.js inbound endpoint.
 require('dotenv').config() // loads .env locally; no-op on Railway (vars come from the dashboard)
+const fs = require('fs')
+const path = require('path')
 const express = require('express')
 const qrcodeTerminal = require('qrcode-terminal')
 const QRCode = require('qrcode')
@@ -85,6 +87,35 @@ const DEDUP_WINDOW_MS = Number(process.env.WORKER_DEDUP_MS) || 10 * 60 * 1000
 if (BROWSER_PATH) console.log(`[worker] using browser: ${BROWSER_PATH}`)
 else console.log('[worker] using puppeteer bundled Chromium')
 
+// A crash or redeploy can leave Chromium's profile singleton lock behind on the persistent volume.
+// The next container has a DIFFERENT hostname, so Chromium reads the lock as "profile in use by
+// another computer" and refuses to launch — and because /data survives restarts, the retry loop can
+// never recover on its own. Exactly one worker runs at a time, so any lock found at boot is stale by
+// definition: remove it before every launch. (SingletonLock is a dangling symlink — rmSync handles it.)
+const WWEBJS_DATA_PATH = process.env.WWEBJS_DATA_PATH || './.wwebjs_auth'
+function clearStaleChromiumLocks() {
+  try {
+    const sessionDirs = fs
+      .readdirSync(WWEBJS_DATA_PATH, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && d.name.startsWith('session'))
+      .map((d) => path.join(WWEBJS_DATA_PATH, d.name))
+    for (const dir of sessionDirs) {
+      for (const name of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
+        const p = path.join(dir, name)
+        try {
+          fs.lstatSync(p) // throws if absent (lstat, not stat: SingletonLock is a dangling symlink)
+          fs.rmSync(p, { force: true })
+          console.log(`[worker] cleared stale ${name} in ${dir}`)
+        } catch {
+          /* nothing to clear */
+        }
+      }
+    }
+  } catch {
+    /* data dir doesn't exist yet (first boot) — nothing to do */
+  }
+}
+
 // Build a FRESH client with all listeners attached. We never call initialize() twice on the same
 // instance (that caused "binding already exists"); on every (re)connect we destroy the old one
 // (releasing the userDataDir lock that caused "browser is already running") and create a new one.
@@ -142,6 +173,7 @@ async function startClient(attempt = 0) {
         /* ignore destroy errors */
       }
     }
+    clearStaleChromiumLocks()
     client = createClient()
     await client.initialize()
     starting = false
