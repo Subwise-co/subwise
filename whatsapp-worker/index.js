@@ -116,6 +116,27 @@ function clearStaleChromiumLocks() {
   }
 }
 
+// Escape hatch for a CORRUPTED profile (e.g. after a hard crash): set WWEBJS_RESET_SESSION=1 in the
+// service env and redeploy — the session folders are moved aside (not deleted) at boot, Chromium
+// starts clean, and you re-link once via /qr. Then REMOVE the var so later restarts keep the session.
+function resetSessionIfRequested() {
+  if (process.env.WWEBJS_RESET_SESSION !== '1') return
+  try {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const dirs = fs
+      .readdirSync(WWEBJS_DATA_PATH, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && d.name.startsWith('session') && !d.name.includes('backup'))
+    for (const d of dirs) {
+      const from = path.join(WWEBJS_DATA_PATH, d.name)
+      const to = path.join(WWEBJS_DATA_PATH, `${d.name}-backup-${stamp}`)
+      fs.renameSync(from, to)
+      console.log(`[worker] WWEBJS_RESET_SESSION=1 — moved ${from} → ${to}; re-link via /qr, then unset the var`)
+    }
+  } catch (e) {
+    console.error('[worker] session reset failed:', e?.message || e)
+  }
+}
+
 // Build a FRESH client with all listeners attached. We never call initialize() twice on the same
 // instance (that caused "binding already exists"); on every (re)connect we destroy the old one
 // (releasing the userDataDir lock that caused "browser is already running") and create a new one.
@@ -125,7 +146,18 @@ function createClient() {
     puppeteer: {
       headless: true,
       executablePath: BROWSER_PATH,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        // Containers give /dev/shm only 64MB; Chromium exhausts it and dies at launch ("Code: null").
+        // This makes it use /tmp instead — the standard puppeteer-in-Docker fix.
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-crash-reporter',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-extensions',
+      ],
     },
     // Give a slow first page-load more room than the 30s default before throwing "auth timeout".
     authTimeoutMs: 60_000,
@@ -384,6 +416,7 @@ async function scanTicker() {
 app.listen(PORT, () => console.log(`[worker] HTTP listening on :${PORT}`))
 // Resolve the WhatsApp Web version to pin BEFORE the first client start, then boot the client.
 ;(async () => {
+  resetSessionIfRequested() // once, at boot — NOT on every reconnect
   resolvedWebVersion = await resolveLatestWebVersion()
   if (resolvedWebVersion)
     console.log(`[worker] pinning WhatsApp Web ${resolvedWebVersion} (remote cache → no live-page mismatch)`)
